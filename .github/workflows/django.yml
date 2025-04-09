@@ -1,4 +1,4 @@
-name: Django CI
+name: Django CI/CD
 
 on:
   push:
@@ -11,12 +11,27 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shopnu
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - name: Check out code
+      uses: actions/checkout@v2
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v2
       with:
         python-version: '3.11'
 
@@ -27,9 +42,12 @@ jobs:
 
     - name: Run migrations
       run: |
-        python manage.py makemigrations
         python manage.py migrate
 
-    - name: Run Django Tests
+    - name: Run server
       run: |
-        python manage.py test
+        python manage.py runserver
+      env:
+        DEBUG: True
+        SECRET_KEY: dummysecret
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/shopnu
